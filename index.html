@@ -35,11 +35,10 @@
       margin-top: 10px;
     }
 
-    #restartBtn {
+    .gameBtn {
       margin-top: 10px;
       padding: 10px 20px;
       font-size: 16px;
-      display: none;
       border: none;
       border-radius: 8px;
       background: #007bff;
@@ -47,8 +46,12 @@
       cursor: pointer;
     }
 
-    #restartBtn:hover {
+    .gameBtn:hover {
       background: #0056b3;
+    }
+
+    #restartBtn {
+      display: none;
     }
   </style>
 </head>
@@ -57,7 +60,8 @@
     <h1>Vote For Staines</h1>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
     <p>Press Space or Tap to Jump</p>
-    <button id="restartBtn">Restart Game</button>
+    <button id="startBtn" class="gameBtn">Start Game</button>
+    <button id="restartBtn" class="gameBtn">Restart Game</button>
   </div>
 
   <script src="game.js"></script>

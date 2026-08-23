@@ -1,13 +1,16 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const restartBtn = document.getElementById("restartBtn");
+const startBtn = document.getElementById("startBtn");
 
 const groundHeight = 20;
 const floorY = canvas.height - groundHeight;
 
 let gameOver = false;
+let gameStarted = false;
 let score = 0;
 let scored = false;
+let animationId;
 
 const player = {
   x: 50,
@@ -29,15 +32,8 @@ const obstacle = {
   y: floorY - 40
 };
 
-function resetGame() {
-  player.y = floorY - player.height;
-  player.velocityY = 0;
-  obstacle.x = canvas.width;
-  gameOver = false;
-  score = 0;
-  scored = false;
-  restartBtn.style.display = "none";
-  gameLoop();
+function getRandomObstacleStart() {
+  return canvas.width + Math.floor(Math.random() * 200) + 100;
 }
 
 function drawPlayer() {
@@ -61,6 +57,12 @@ function drawScore() {
   ctx.fillText("Score: " + score, 20, 40);
 }
 
+function drawStartScreen() {
+  ctx.fillStyle = "black";
+  ctx.font = "28px Arial";
+  ctx.fillText("Ready to Play?", 100, 250);
+}
+
 function updatePlayer() {
   player.velocityY += player.gravity;
   player.y += player.velocityY;
@@ -75,7 +77,7 @@ function updateObstacle() {
   obstacle.x -= obstacle.speed;
 
   if (obstacle.x + obstacle.width < 0) {
-    obstacle.x = canvas.width;
+    obstacle.x = getRandomObstacleStart();
     scored = false;
   }
 
@@ -107,9 +109,26 @@ function drawGameOver() {
 }
 
 function jump() {
-  if (!gameOver && player.velocityY === 0) {
+  if (gameStarted && !gameOver && player.velocityY === 0) {
     player.velocityY = player.jumpPower;
   }
+}
+
+function startGame() {
+  gameStarted = true;
+  gameOver = false;
+  score = 0;
+  scored = false;
+  player.y = floorY - player.height;
+  player.velocityY = 0;
+  obstacle.x = getRandomObstacleStart();
+  startBtn.style.display = "none";
+  restartBtn.style.display = "none";
+  gameLoop();
+}
+
+function resetGame() {
+  startGame();
 }
 
 function gameLoop() {
@@ -117,14 +136,20 @@ function gameLoop() {
 
   drawGround();
   drawPlayer();
-  drawObstacle();
   drawScore();
+
+  if (!gameStarted) {
+    drawStartScreen();
+    return;
+  }
+
+  drawObstacle();
 
   if (!gameOver) {
     updatePlayer();
     updateObstacle();
     checkCollision();
-    requestAnimationFrame(gameLoop);
+    animationId = requestAnimationFrame(gameLoop);
   } else {
     drawGameOver();
   }
@@ -135,13 +160,18 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("click", (e) => {
-  if (e.target !== restartBtn && !gameOver) jump();
+  if (e.target !== restartBtn && e.target !== startBtn && gameStarted && !gameOver) {
+    jump();
+  }
 });
 
 document.addEventListener("touchstart", (e) => {
-  if (e.target !== restartBtn && !gameOver) jump();
+  if (e.target !== restartBtn && e.target !== startBtn && gameStarted && !gameOver) {
+    jump();
+  }
 });
 
+startBtn.addEventListener("click", startGame);
 restartBtn.addEventListener("click", resetGame);
 
 gameLoop();
