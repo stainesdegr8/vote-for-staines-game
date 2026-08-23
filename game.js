@@ -67,12 +67,13 @@ function getFlyingSpawnDistance() {
 
 function getFlyingHeight() {
   if (score >= 25) {
-    const heights = [470, 450, 430];
+    const heights = [320, 300, 280];
     return heights[Math.floor(Math.random() * heights.length)];
   } else {
-    return 460;
+    return 310;
   }
 }
+
 
 function shouldSpawnFlyingObstacle() {
   if (score <= 10) return false;
