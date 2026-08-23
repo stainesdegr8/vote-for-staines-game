@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 
 const groundHeight = 20;
 const floorY = canvas.height - groundHeight;
+let gameOver = false;
 
 const player = {
   x: 50,
@@ -59,8 +60,25 @@ function updateObstacle() {
   }
 }
 
+function checkCollision() {
+  if (
+    player.x < obstacle.x + obstacle.width &&
+    player.x + player.width > obstacle.x &&
+    player.y < obstacle.y + obstacle.height &&
+    player.y + player.height > obstacle.y
+  ) {
+    gameOver = true;
+  }
+}
+
+function drawGameOver() {
+  ctx.fillStyle = "black";
+  ctx.font = "30px Arial";
+  ctx.fillText("Game Over", 120, 250);
+}
+
 function jump() {
-  if (player.velocityY === 0) {
+  if (!gameOver && player.velocityY === 0) {
     player.velocityY = player.jumpPower;
   }
 }
@@ -72,10 +90,14 @@ function gameLoop() {
   drawPlayer();
   drawObstacle();
 
-  updatePlayer();
-  updateObstacle();
-
-  requestAnimationFrame(gameLoop);
+  if (!gameOver) {
+    updatePlayer();
+    updateObstacle();
+    checkCollision();
+    requestAnimationFrame(gameLoop);
+  } else {
+    drawGameOver();
+  }
 }
 
 document.addEventListener("keydown", (e) => {
