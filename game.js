@@ -1,8 +1,10 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const restartBtn = document.getElementById("restartBtn");
 
 const groundHeight = 20;
 const floorY = canvas.height - groundHeight;
+
 let gameOver = false;
 
 const player = {
@@ -12,20 +14,27 @@ const player = {
   color: "blue",
   velocityY: 0,
   gravity: 0.8,
-  jumpPower: -12
+  jumpPower: -12,
+  y: floorY - 40
 };
-
-player.y = floorY - player.height;
 
 const obstacle = {
   x: 400,
   width: 30,
   height: 40,
   color: "red",
-  speed: 5
+  speed: 5,
+  y: floorY - 40
 };
 
-obstacle.y = floorY - obstacle.height;
+function resetGame() {
+  player.y = floorY - player.height;
+  player.velocityY = 0;
+  obstacle.x = canvas.width;
+  gameOver = false;
+  restartBtn.style.display = "none";
+  gameLoop();
+}
 
 function drawPlayer() {
   ctx.fillStyle = player.color;
@@ -68,6 +77,7 @@ function checkCollision() {
     player.y + player.height > obstacle.y
   ) {
     gameOver = true;
+    restartBtn.style.display = "inline-block";
   }
 }
 
@@ -104,7 +114,14 @@ document.addEventListener("keydown", (e) => {
   if (e.code === "Space") jump();
 });
 
-document.addEventListener("click", jump);
-document.addEventListener("touchstart", jump);
+document.addEventListener("click", (e) => {
+  if (e.target !== restartBtn && !gameOver) jump();
+});
+
+document.addEventListener("touchstart", (e) => {
+  if (e.target !== restartBtn && !gameOver) jump();
+});
+
+restartBtn.addEventListener("click", resetGame);
 
 gameLoop();
