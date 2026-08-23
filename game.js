@@ -14,6 +14,8 @@ let scored = false;
 let flyingActive = false;
 let flyingScored = false;
 
+let highScore = localStorage.getItem("voteForStainesHighScore") || 0;
+
 const player = {
   x: 50,
   width: 40,
@@ -30,18 +32,26 @@ const obstacle = {
   width: 30,
   height: 40,
   color: "red",
-  speed: 5,
+  baseSpeed: 5,
   y: floorY - 40
 };
 
 const flyingObstacle = {
   x: canvas.width + 500,
-  y: 420,
+  y: 460,
   width: 30,
   height: 30,
   color: "purple",
-  speed: 6
+  baseSpeed: 6
 };
+
+function getObstacleSpeed() {
+  return Math.min(5 + Math.floor(score / 10), 10);
+}
+
+function getFlyingSpeed() {
+  return Math.min(6 + Math.floor(score / 12), 11);
+}
 
 function getRandomObstacleStart() {
   return canvas.width + Math.floor(Math.random() * 200) + 100;
@@ -63,7 +73,6 @@ function getFlyingHeight() {
     return 460;
   }
 }
-
 
 function shouldSpawnFlyingObstacle() {
   if (score <= 10) return false;
@@ -106,6 +115,7 @@ function drawScore() {
   ctx.fillStyle = "black";
   ctx.font = "24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
+  ctx.fillText("Best: " + highScore, 20, 70);
 }
 
 function drawStartScreen() {
@@ -125,7 +135,8 @@ function updatePlayer() {
 }
 
 function updateObstacle() {
-  obstacle.x -= obstacle.speed;
+  const speed = getObstacleSpeed();
+  obstacle.x -= speed;
 
   if (obstacle.x + obstacle.width < 0) {
     obstacle.x = getRandomObstacleStart();
@@ -141,12 +152,10 @@ function updateObstacle() {
 function updateFlyingObstacle() {
   if (!flyingActive) return;
 
-  flyingObstacle.x -= flyingObstacle.speed;
+  const speed = getFlyingSpeed();
+  flyingObstacle.x -= speed;
 
-  if (
-    !flyingScored &&
-    flyingObstacle.x + flyingObstacle.width < player.x
-  ) {
+  if (!flyingScored && flyingObstacle.x + flyingObstacle.width < player.x) {
     score++;
     flyingScored = true;
   }
@@ -174,15 +183,24 @@ function hitBoxCollision(a, b) {
   );
 }
 
+function endGame() {
+  gameOver = true;
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("voteForStainesHighScore", highScore);
+  }
+
+  restartBtn.style.display = "inline-block";
+}
+
 function checkCollision() {
   if (hitBoxCollision(player, obstacle)) {
-    gameOver = true;
-    restartBtn.style.display = "inline-block";
+    endGame();
   }
 
   if (flyingActive && hitBoxCollision(player, flyingObstacle)) {
-    gameOver = true;
-    restartBtn.style.display = "inline-block";
+    endGame();
   }
 }
 
@@ -193,6 +211,7 @@ function drawGameOver() {
 
   ctx.font = "22px Arial";
   ctx.fillText("Final Score: " + score, 125, 290);
+  ctx.fillText("Best Score: " + highScore, 118, 320);
 }
 
 function jump() {

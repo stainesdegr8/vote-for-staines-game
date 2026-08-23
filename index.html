@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Vote For Staines Runner</title>
   <style>
     body {
@@ -12,38 +12,49 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      overflow: hidden;
     }
 
     #gameContainer {
       text-align: center;
+      width: 100%;
+      max-width: 420px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 8px 0;
+      font-size: 2rem;
     }
 
     canvas {
       background: white;
       border: 3px solid black;
-      max-width: 100%;
+      width: 100%;
+      height: auto;
       display: block;
       margin: 0 auto;
-    }
-
-    h1 {
-      margin-bottom: 10px;
+      box-sizing: border-box;
     }
 
     p {
       margin-top: 10px;
+      font-size: 1rem;
     }
 
     .gameBtn {
       margin-top: 10px;
-      padding: 10px 20px;
+      padding: 12px 20px;
       font-size: 16px;
       border: none;
       border-radius: 8px;
       background: #007bff;
       color: white;
       cursor: pointer;
+      width: 100%;
+      max-width: 220px;
     }
 
     .gameBtn:hover {
@@ -53,13 +64,28 @@
     #restartBtn {
       display: none;
     }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      p {
+        font-size: 0.95rem;
+      }
+
+      .gameBtn {
+        font-size: 15px;
+        padding: 12px 16px;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="gameContainer">
     <h1>Vote For Staines</h1>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
-    <p>Press Space or Tap to Jump</p>
+    <p>Tap to Jump</p>
     <button id="startBtn" class="gameBtn">Start Game</button>
     <button id="restartBtn" class="gameBtn">Restart Game</button>
   </div>
