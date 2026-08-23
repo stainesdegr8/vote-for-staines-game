@@ -10,7 +10,9 @@ let gameOver = false;
 let gameStarted = false;
 let score = 0;
 let scored = false;
-let animationId;
+
+let flyingActive = false;
+let flyingScored = false;
 
 const player = {
   x: 50,
@@ -32,8 +34,45 @@ const obstacle = {
   y: floorY - 40
 };
 
+const flyingObstacle = {
+  x: canvas.width + 500,
+  y: 420,
+  width: 30,
+  height: 30,
+  color: "purple",
+  speed: 6
+};
+
 function getRandomObstacleStart() {
   return canvas.width + Math.floor(Math.random() * 200) + 100;
+}
+
+function getFlyingSpawnDistance() {
+  if (score >= 25) {
+    return canvas.width + Math.floor(Math.random() * 250) + 120;
+  } else {
+    return canvas.width + Math.floor(Math.random() * 400) + 350;
+  }
+}
+
+function getFlyingHeight() {
+  if (score >= 25) {
+    const heights = [470, 450, 430];
+    return heights[Math.floor(Math.random() * heights.length)];
+  } else {
+    return 460;
+  }
+}
+
+
+function shouldSpawnFlyingObstacle() {
+  if (score <= 10) return false;
+
+  if (score >= 25) {
+    return Math.random() < 0.6;
+  }
+
+  return Math.random() < 0.25;
 }
 
 function drawPlayer() {
@@ -49,6 +88,18 @@ function drawGround() {
 function drawObstacle() {
   ctx.fillStyle = obstacle.color;
   ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+}
+
+function drawFlyingObstacle() {
+  if (flyingActive) {
+    ctx.fillStyle = flyingObstacle.color;
+    ctx.fillRect(
+      flyingObstacle.x,
+      flyingObstacle.y,
+      flyingObstacle.width,
+      flyingObstacle.height
+    );
+  }
 }
 
 function drawScore() {
@@ -87,13 +138,49 @@ function updateObstacle() {
   }
 }
 
-function checkCollision() {
+function updateFlyingObstacle() {
+  if (!flyingActive) return;
+
+  flyingObstacle.x -= flyingObstacle.speed;
+
   if (
-    player.x < obstacle.x + obstacle.width &&
-    player.x + player.width > obstacle.x &&
-    player.y < obstacle.y + obstacle.height &&
-    player.y + player.height > obstacle.y
+    !flyingScored &&
+    flyingObstacle.x + flyingObstacle.width < player.x
   ) {
+    score++;
+    flyingScored = true;
+  }
+
+  if (flyingObstacle.x + flyingObstacle.width < 0) {
+    flyingActive = false;
+  }
+}
+
+function maybeSpawnFlyingObstacle() {
+  if (!flyingActive && shouldSpawnFlyingObstacle()) {
+    flyingActive = true;
+    flyingScored = false;
+    flyingObstacle.x = getFlyingSpawnDistance();
+    flyingObstacle.y = getFlyingHeight();
+  }
+}
+
+function hitBoxCollision(a, b) {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+function checkCollision() {
+  if (hitBoxCollision(player, obstacle)) {
+    gameOver = true;
+    restartBtn.style.display = "inline-block";
+  }
+
+  if (flyingActive && hitBoxCollision(player, flyingObstacle)) {
     gameOver = true;
     restartBtn.style.display = "inline-block";
   }
@@ -119,11 +206,17 @@ function startGame() {
   gameOver = false;
   score = 0;
   scored = false;
+  flyingActive = false;
+  flyingScored = false;
+
   player.y = floorY - player.height;
   player.velocityY = 0;
+
   obstacle.x = getRandomObstacleStart();
+
   startBtn.style.display = "none";
   restartBtn.style.display = "none";
+
   gameLoop();
 }
 
@@ -144,12 +237,15 @@ function gameLoop() {
   }
 
   drawObstacle();
+  drawFlyingObstacle();
 
   if (!gameOver) {
     updatePlayer();
     updateObstacle();
+    maybeSpawnFlyingObstacle();
+    updateFlyingObstacle();
     checkCollision();
-    animationId = requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameLoop);
   } else {
     drawGameOver();
   }
