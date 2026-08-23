@@ -1,9 +1,11 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const groundHeight = 20;
+const floorY = canvas.height - groundHeight;
+
 const player = {
   x: 50,
-  y: 500,
   width: 40,
   height: 40,
   color: "blue",
@@ -12,7 +14,17 @@ const player = {
   jumpPower: -12
 };
 
-const groundY = 550;
+player.y = floorY - player.height;
+
+const obstacle = {
+  x: 400,
+  width: 30,
+  height: 40,
+  color: "red",
+  speed: 5
+};
+
+obstacle.y = floorY - obstacle.height;
 
 function drawPlayer() {
   ctx.fillStyle = player.color;
@@ -21,16 +33,29 @@ function drawPlayer() {
 
 function drawGround() {
   ctx.fillStyle = "green";
-  ctx.fillRect(0, groundY + player.height, canvas.width, canvas.height - groundY);
+  ctx.fillRect(0, floorY, canvas.width, groundHeight);
+}
+
+function drawObstacle() {
+  ctx.fillStyle = obstacle.color;
+  ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
 }
 
 function updatePlayer() {
   player.velocityY += player.gravity;
   player.y += player.velocityY;
 
-  if (player.y > groundY - player.height + 40) {
-    player.y = groundY - player.height + 40;
+  if (player.y > floorY - player.height) {
+    player.y = floorY - player.height;
     player.velocityY = 0;
+  }
+}
+
+function updateObstacle() {
+  obstacle.x -= obstacle.speed;
+
+  if (obstacle.x + obstacle.width < 0) {
+    obstacle.x = canvas.width;
   }
 }
 
@@ -43,9 +68,12 @@ function jump() {
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  drawPlayer();
   drawGround();
+  drawPlayer();
+  drawObstacle();
+
   updatePlayer();
+  updateObstacle();
 
   requestAnimationFrame(gameLoop);
 }
@@ -58,4 +86,3 @@ document.addEventListener("click", jump);
 document.addEventListener("touchstart", jump);
 
 gameLoop();
-
