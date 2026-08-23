@@ -6,6 +6,8 @@ const groundHeight = 20;
 const floorY = canvas.height - groundHeight;
 
 let gameOver = false;
+let score = 0;
+let scored = false;
 
 const player = {
   x: 50,
@@ -32,6 +34,8 @@ function resetGame() {
   player.velocityY = 0;
   obstacle.x = canvas.width;
   gameOver = false;
+  score = 0;
+  scored = false;
   restartBtn.style.display = "none";
   gameLoop();
 }
@@ -51,6 +55,12 @@ function drawObstacle() {
   ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
 }
 
+function drawScore() {
+  ctx.fillStyle = "black";
+  ctx.font = "24px Arial";
+  ctx.fillText("Score: " + score, 20, 40);
+}
+
 function updatePlayer() {
   player.velocityY += player.gravity;
   player.y += player.velocityY;
@@ -66,6 +76,12 @@ function updateObstacle() {
 
   if (obstacle.x + obstacle.width < 0) {
     obstacle.x = canvas.width;
+    scored = false;
+  }
+
+  if (!scored && obstacle.x + obstacle.width < player.x) {
+    score++;
+    scored = true;
   }
 }
 
@@ -85,6 +101,9 @@ function drawGameOver() {
   ctx.fillStyle = "black";
   ctx.font = "30px Arial";
   ctx.fillText("Game Over", 120, 250);
+
+  ctx.font = "22px Arial";
+  ctx.fillText("Final Score: " + score, 125, 290);
 }
 
 function jump() {
@@ -99,6 +118,7 @@ function gameLoop() {
   drawGround();
   drawPlayer();
   drawObstacle();
+  drawScore();
 
   if (!gameOver) {
     updatePlayer();
