@@ -1,12 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vote For Staines Game</title>
+  <title>Vote For Staines Runner</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #87ceeb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #gameContainer {
+      text-align: center;
+    }
+
+    canvas {
+      background: white;
+      border: 3px solid black;
+      max-width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin-top: 10px;
+    }
+  </style>
 </head>
-<body style="font-family: Arial; text-align: center; padding-top: 50px;">
-  <h1>Vote For Staines</h1>
-  <p>This is my Telegram game page.</p>
+<body>
+  <div id="gameContainer">
+    <h1>Vote For Staines</h1>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <p>Press Space or Tap to Jump</p>
+  </div>
+
+  <script src="game.js"></script>
 </body>
 </html>
+
