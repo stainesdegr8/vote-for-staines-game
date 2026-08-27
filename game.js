@@ -16,6 +16,19 @@ let flyingScored = false;
 
 let highScore = localStorage.getItem("voteForStainesHighScore") || 0;
 
+let bossBattleActive = false;
+let bossBattleCount = 0;
+let bossClicks = 0;
+let bossRequiredClicks = 0;
+let bossBattleStartTime = 0;
+let lastBossTriggerScore = 0;
+
+let bossButtons = [];
+let lastBossButtonSpawnTime = 0;
+
+let bossDefeated = false;
+let bossDefeatedStartTime = 0;
+
 const player = {
   x: 50,
   width: 40,
@@ -32,7 +45,6 @@ const obstacle = {
   width: 30,
   height: 40,
   color: "red",
-  baseSpeed: 5,
   y: floorY - 40
 };
 
@@ -41,8 +53,7 @@ const flyingObstacle = {
   y: 460,
   width: 30,
   height: 30,
-  color: "purple",
-  baseSpeed: 6
+  color: "purple"
 };
 
 function getObstacleSpeed() {
@@ -76,12 +87,17 @@ function getFlyingHeight() {
 
 function shouldSpawnFlyingObstacle() {
   if (score <= 10) return false;
-
-  if (score >= 25) {
-    return Math.random() < 0.6;
-  }
-
+  if (score >= 25) return Math.random() < 0.6;
   return Math.random() < 0.25;
+}
+
+function getBossRequiredClicks(bossNumber) {
+  if (bossNumber === 1) return 20;
+  if (bossNumber === 2) return 25;
+  if (bossNumber === 3) return 30;
+  if (bossNumber === 4) return 35;
+  if (bossNumber === 5) return 40;
+  return 45;
 }
 
 function drawPlayer() {
@@ -95,12 +111,14 @@ function drawGround() {
 }
 
 function drawObstacle() {
-  ctx.fillStyle = obstacle.color;
-  ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  if (!bossBattleActive && !bossDefeated) {
+    ctx.fillStyle = obstacle.color;
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  }
 }
 
 function drawFlyingObstacle() {
-  if (flyingActive) {
+  if (flyingActive && !bossBattleActive && !bossDefeated) {
     ctx.fillStyle = flyingObstacle.color;
     ctx.fillRect(
       flyingObstacle.x,
@@ -116,12 +134,172 @@ function drawScore() {
   ctx.font = "24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
   ctx.fillText("Best: " + highScore, 20, 70);
+
+  if (bossBattleActive) {
+    ctx.font = "18px Arial";
+    ctx.fillText("Need: " + bossRequiredClicks + " clicks", 20, 100);
+    ctx.fillText("Current: " + bossClicks, 20, 125);
+  }
 }
 
 function drawStartScreen() {
   ctx.fillStyle = "black";
   ctx.font = "28px Arial";
   ctx.fillText("Ready to Play?", 100, 250);
+}
+
+function drawBossBattleScreen() {
+  const elapsed = (Date.now() - bossBattleStartTime) / 1000;
+  const timeLeft = Math.max(0, (15 - elapsed).toFixed(1));
+
+  ctx.fillStyle = "red";
+  ctx.fillRect(265, 110, 110, 110);
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(285, 140, 15, 15);
+  ctx.fillRect(340, 140, 15, 15);
+  ctx.fillRect(300, 180, 40, 8);
+
+  ctx.fillStyle = "darkred";
+  ctx.font = "22px Arial";
+  ctx.fillText("BOSS BATTLE", 220, 30);
+
+  ctx.fillStyle = "black";
+  ctx.font = "18px Arial";
+  ctx.fillText("Time: " + timeLeft + "s", 285, 55);
+  ctx.fillText("Tap buttons to defeat boss", 180, 80);
+  ctx.fillText("Boss " + bossBattleCount, 295, 105);
+}
+
+function drawBossDefeatedScreen() {
+  ctx.fillStyle = "red";
+  ctx.fillRect(265, 110, 110, 110);
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(285, 140, 15, 15);
+  ctx.fillRect(340, 140, 15, 15);
+  ctx.fillRect(300, 180, 40, 8);
+
+  ctx.fillStyle = "limegreen";
+  ctx.font = "28px Arial";
+  ctx.fillText("DEFEATED", 250, 95);
+}
+
+function getRandomBossButtonCount() {
+  return Math.floor(Math.random() * 3) + 1;
+}
+
+function spawnBossButtons() {
+  const count = getRandomBossButtonCount();
+
+  for (let i = 0; i < count; i++) {
+    const buttonWidth = 120;
+    const buttonHeight = 36;
+
+    let tries = 0;
+    let valid = false;
+    let x, y;
+
+    while (!valid && tries < 50) {
+      x = Math.random() * (canvas.width - buttonWidth);
+      y = Math.random() * (floorY - buttonHeight - 20);
+
+      const overlapsScoreboard = x < 180 && y < 140;
+      const overlapsBoss = x + buttonWidth > 265 && x < 375 && y + buttonHeight > 110 && y < 220;
+      const overlapsPlayer = x + buttonWidth > player.x && x < player.x + player.width && y + buttonHeight > player.y && y < player.y + player.height;
+      const overlapsTopRightText = x + buttonWidth > 180 && y < 120;
+
+      if (!overlapsScoreboard && !overlapsBoss && !overlapsPlayer && !overlapsTopRightText) {
+        valid = true;
+      }
+
+      tries++;
+    }
+
+    if (valid) {
+      bossButtons.push({
+        x,
+        y,
+        width: buttonWidth,
+        height: buttonHeight,
+        text: "Vote for Staines",
+        createdAt: Date.now()
+      });
+    }
+  }
+}
+
+function drawBossButtons() {
+  bossButtons.forEach((button) => {
+    ctx.fillStyle = "#007bff";
+    ctx.fillRect(button.x, button.y, button.width, button.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      button.text,
+      button.x + button.width / 2,
+      button.y + button.height / 2
+    );
+
+    ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
+  });
+}
+
+function removeExpiredBossButtons() {
+  bossButtons = bossButtons.filter((button) => Date.now() - button.createdAt < 1000);
+}
+
+function maybeSpawnBossButtons() {
+  const now = Date.now();
+  const sinceLast = now - lastBossButtonSpawnTime;
+  const randomSpawnGap = 300 + Math.random() * 500;
+
+  if (sinceLast >= randomSpawnGap) {
+    spawnBossButtons();
+    lastBossButtonSpawnTime = now;
+  }
+}
+
+function handleBossButtonClick(mouseX, mouseY) {
+  for (let i = bossButtons.length - 1; i >= 0; i--) {
+    const button = bossButtons[i];
+    const clicked =
+      mouseX >= button.x &&
+      mouseX <= button.x + button.width &&
+      mouseY >= button.y &&
+      mouseY <= button.y + button.height;
+
+    if (clicked) {
+      bossClicks++;
+      bossButtons.splice(i, 1);
+
+      if (bossClicks >= bossRequiredClicks) {
+        bossBattleActive = false;
+        bossDefeated = true;
+        bossDefeatedStartTime = Date.now();
+        bossButtons = [];
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getCanvasClickPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
+  };
 }
 
 function updatePlayer() {
@@ -146,6 +324,12 @@ function updateObstacle() {
   if (!scored && obstacle.x + obstacle.width < player.x) {
     score++;
     scored = true;
+
+    // TESTING MODE
+    if (score % 3 === 0 && score !== lastBossTriggerScore) {
+      lastBossTriggerScore = score;
+      startBossBattle();
+    }
   }
 }
 
@@ -174,6 +358,17 @@ function maybeSpawnFlyingObstacle() {
   }
 }
 
+function updateBossDefeatedState() {
+  if (!bossDefeated) return;
+
+  const elapsed = (Date.now() - bossDefeatedStartTime) / 1000;
+  if (elapsed >= 1.5) {
+    bossDefeated = false;
+    obstacle.x = getRandomObstacleStart();
+    scored = false;
+  }
+}
+
 function hitBoxCollision(a, b) {
   return (
     a.x < b.x + b.width &&
@@ -195,11 +390,11 @@ function endGame() {
 }
 
 function checkCollision() {
-  if (hitBoxCollision(player, obstacle)) {
+  if (!bossBattleActive && !bossDefeated && hitBoxCollision(player, obstacle)) {
     endGame();
   }
 
-  if (flyingActive && hitBoxCollision(player, flyingObstacle)) {
+  if (!bossBattleActive && !bossDefeated && flyingActive && hitBoxCollision(player, flyingObstacle)) {
     endGame();
   }
 }
@@ -215,8 +410,38 @@ function drawGameOver() {
 }
 
 function jump() {
-  if (gameStarted && !gameOver && player.velocityY === 0) {
+  if (gameStarted && !gameOver && !bossBattleActive && !bossDefeated && player.velocityY === 0) {
     player.velocityY = player.jumpPower;
+  }
+}
+
+function startBossBattle() {
+  bossBattleActive = true;
+  bossBattleCount++;
+  bossClicks = 0;
+  bossRequiredClicks = getBossRequiredClicks(bossBattleCount);
+  bossBattleStartTime = Date.now();
+  lastBossButtonSpawnTime = 0;
+  bossButtons = [];
+  bossDefeated = false;
+  flyingActive = false;
+}
+
+function updateBossBattle() {
+  const elapsed = (Date.now() - bossBattleStartTime) / 1000;
+
+  maybeSpawnBossButtons();
+  removeExpiredBossButtons();
+
+  if (elapsed >= 15) {
+    if (bossClicks >= bossRequiredClicks) {
+      bossBattleActive = false;
+      bossDefeated = true;
+      bossDefeatedStartTime = Date.now();
+      bossButtons = [];
+    } else {
+      endGame();
+    }
   }
 }
 
@@ -227,10 +452,19 @@ function startGame() {
   scored = false;
   flyingActive = false;
   flyingScored = false;
+  bossBattleActive = false;
+  bossBattleCount = 0;
+  bossClicks = 0;
+  bossRequiredClicks = 0;
+  bossBattleStartTime = 0;
+  lastBossTriggerScore = 0;
+  bossButtons = [];
+  lastBossButtonSpawnTime = 0;
+  bossDefeated = false;
+  bossDefeatedStartTime = 0;
 
   player.y = floorY - player.height;
   player.velocityY = 0;
-
   obstacle.x = getRandomObstacleStart();
 
   startBtn.style.display = "none";
@@ -259,11 +493,21 @@ function gameLoop() {
   drawFlyingObstacle();
 
   if (!gameOver) {
-    updatePlayer();
-    updateObstacle();
-    maybeSpawnFlyingObstacle();
-    updateFlyingObstacle();
-    checkCollision();
+    if (bossBattleActive) {
+      drawBossBattleScreen();
+      drawBossButtons();
+      updateBossBattle();
+    } else if (bossDefeated) {
+      drawBossDefeatedScreen();
+      updateBossDefeatedState();
+    } else {
+      updatePlayer();
+      updateObstacle();
+      maybeSpawnFlyingObstacle();
+      updateFlyingObstacle();
+      checkCollision();
+    }
+
     requestAnimationFrame(gameLoop);
   } else {
     drawGameOver();
@@ -274,14 +518,37 @@ document.addEventListener("keydown", (e) => {
   if (e.code === "Space") jump();
 });
 
-document.addEventListener("click", (e) => {
-  if (e.target !== restartBtn && e.target !== startBtn && gameStarted && !gameOver) {
+canvas.addEventListener("click", (e) => {
+  if (!gameStarted || gameOver) return;
+
+  const pos = getCanvasClickPosition(e);
+
+  if (bossBattleActive) {
+    const clickedBossButton = handleBossButtonClick(pos.x, pos.y);
+    if (clickedBossButton) return;
+  } else if (!bossDefeated) {
     jump();
   }
 });
 
-document.addEventListener("touchstart", (e) => {
-  if (e.target !== restartBtn && e.target !== startBtn && gameStarted && !gameOver) {
+canvas.addEventListener("touchstart", (e) => {
+  if (!gameStarted || gameOver) return;
+
+  const touch = e.touches;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const x = (touch.clientX - rect.left) * scaleX;
+  const y = (touch.clientY - rect.top) * scaleY;
+
+  if (bossBattleActive) {
+    const clickedBossButton = handleBossButtonClick(x, y);
+    if (clickedBossButton) {
+      e.preventDefault();
+      return;
+    }
+  } else if (!bossDefeated) {
     jump();
   }
 });
